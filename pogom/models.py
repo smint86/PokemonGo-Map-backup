@@ -296,10 +296,13 @@ class Pokemon(BaseModel):
         if len(temp)>0:
             disappear_time = temp[0]['disappear_time']
             
-            if now.minute * 60 + now.second > disappear_time.minute * 60 + disappear_time.second:
-                predicted = predicted + timedelta(hours = 1)
             
             predicted = now.replace(hour = now.hour, minute = disappear_time.minute, second = disappear_time.second)
+
+            if now.minute * 60 + now.second > disappear_time.minute * 60 + disappear_time.second:
+                predicted = predicted + timedelta(hours = 1)
+
+            
             log.error("Predicted datetime %s " % (predicted.strftime("%Y-%m-%d %H:%M:%S")))
         return predicted
         

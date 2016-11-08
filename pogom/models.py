@@ -286,7 +286,7 @@ class Pokemon(BaseModel):
                 .where((Pokemon.spawnpoint_id == spawnpoint_id) &
                        (Pokemon.time_detail == 'saved')
                        )
-                .orderby(Pokemon.last_modified.desc())
+                .order_by(Pokemon.last_modified.desc())
                 .limit(1)).dicts()
         
         temp = list(query)
@@ -1178,7 +1178,7 @@ def clean_db_loop(args):
                 query = (Pokemon
                          .delete()
                          .where((Pokemon.disappear_time <
-                                (datetime.utcnow() - timedelta(hours=args.purge_data)))))
+                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_deatil == 'saved' )))
                 query.execute()
 
             log.info('Regular database cleaning complete')
@@ -1314,5 +1314,5 @@ def database_migrate(db, old_ver):
         )
     if old_ver < 10:
         migrate(
-            migrator.add_column('pokemon', 'time_detail', CharField())
+            migrator.add_column('pokemon', 'time_detail', CharField(default="unknown"))
         )

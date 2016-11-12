@@ -58,6 +58,7 @@ def init_database(app):
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
     if args.clean_timers_data:
+        log.info('Cleaning Spawns timer data...')
         Pokemon.clean_timers_data()
     return db
 
@@ -276,10 +277,11 @@ class Pokemon(BaseModel):
     @classmethod
     def get_spawn_time(cls, disappear_time):
         return (disappear_time + 2700) % 3600
-    
+
     @classmethod
     def clean_timers_data(cls):
         query = Pokemon.update(time_detail=-1).where(Pokemon.time_detail == 1)
+        query.execute()
 
     @classmethod
     def predict_disappear_time(cls, spawnpoint_id):
@@ -293,15 +295,14 @@ class Pokemon(BaseModel):
                        )
                 .order_by(Pokemon.last_modified.desc())
                 .limit(1)).dicts()
-        
+
         temp = list(query)
 
         log.debug("Found %d entrie(s) in db as to predict disappear_time" % (len(temp)))
-        
+
         if len(temp)>0:
             disappear_time = temp[0]['disappear_time']
-            
-            
+
             predicted = now.replace(minute = disappear_time.minute, second = disappear_time.second)
 
             if now > predicted:
@@ -309,7 +310,7 @@ class Pokemon(BaseModel):
 
             log.debug("Predicted datetime %s " % (predicted.strftime("%Y-%m-%d %H:%M:%S")))
         return predicted
-        
+
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):

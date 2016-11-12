@@ -832,9 +832,13 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
 
         for p in wild_pokemon:
             if (b64encode(str(p['encounter_id'])), p['spawn_point_id']) in encountered_pokemon:
-                # If pokemon has been encountered before dont process it.
-                skipped += 1
-                continue
+                # This pokemon has been encountered before, let's check if the new one has valid time. If not, skip.
+                if 0 < p['time_till_hidden_ms'] < 3600000:
+                    Pokemon.delete().where(Pokemon.encounter_id == b64encode(str(p['encounter_id'])))
+                else:
+                    # No valid time. Skip.
+                    skipped += 1
+                    continue
 
             time_detail = -1
 

@@ -365,17 +365,17 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
   
   var timecontent = ``;
   
-  if (time_detail == "saved"){
+  if (time_detail == 1){
 	  timecontent = `<div><b>This time is secure. It has been received from the server.</b><br>
       Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
       <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
     </div>`;
-  }else if(time_detail == "predicted"){
+  }else if(time_detail == 0){
 	  timecontent = `<div><b>This time is only a prediction. It may be wrong.</b><br>
       Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
       <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
     </div>`;
-  }else if(time_detail == "unknown"){
+  }else if(time_detail == -1){
 	  timecontent = `<div><b>Don't trust this time! It has been set manually to 15m when this pokemon has been encountered</b><br>
       Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
       <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>

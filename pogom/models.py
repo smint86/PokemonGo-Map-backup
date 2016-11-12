@@ -57,7 +57,8 @@ def init_database(app):
 
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
-
+    if args.clean_timers_data:
+        Pokemon.clean_timers_data()
     return db
 
 
@@ -89,7 +90,7 @@ class Pokemon(BaseModel):
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
     last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
-    time_detail = CharField()
+    time_detail = IntegerField() # -1 when unknown disappear_time, 0 when predicted, 1 when returned by server
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -275,6 +276,10 @@ class Pokemon(BaseModel):
     @classmethod
     def get_spawn_time(cls, disappear_time):
         return (disappear_time + 2700) % 3600
+    
+    @classmethod
+    def clean_timers_data(cls):
+        query = Pokemon.update(time_detail=-1).where(Pokemon.time_detail == 1)
 
     @classmethod
     def predict_disappear_time(cls, spawnpoint_id):
@@ -284,14 +289,14 @@ class Pokemon(BaseModel):
         query = (Pokemon
                 .select(Pokemon.disappear_time)
                 .where((Pokemon.spawnpoint_id == spawnpoint_id) &
-                       (Pokemon.time_detail == 'saved')
+                       (Pokemon.time_detail == 1)
                        )
                 .order_by(Pokemon.last_modified.desc())
                 .limit(1)).dicts()
         
         temp = list(query)
 
-        log.error("Found %d entries as 'saved' in db" % (len(temp)))
+        log.debug("Found %d entrie(s) in db as to predict disappear_time" % (len(temp)))
         
         if len(temp)>0:
             disappear_time = temp[0]['disappear_time']
@@ -300,13 +305,9 @@ class Pokemon(BaseModel):
             predicted = now.replace(minute = disappear_time.minute, second = disappear_time.second)
 
             if now > predicted:
-                log.error(predicted)
-                log.error("Adjusting time...")
                 predicted = predicted + timedelta(hours = 1)
-                log.error(predicted)
 
-            
-            log.error("Predicted datetime %s " % (predicted.strftime("%Y-%m-%d %H:%M:%S")))
+            log.debug("Predicted datetime %s " % (predicted.strftime("%Y-%m-%d %H:%M:%S")))
         return predicted
         
 
@@ -321,7 +322,7 @@ class Pokemon(BaseModel):
                              (Pokemon.longitude >= swLng) &
                              (Pokemon.latitude <= neLat) &
                              (Pokemon.longitude <= neLng) &
-                             (Pokemon.time_detail == 'saved')))
+                             (Pokemon.time_detail == 1)))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
             # Send spawnpoints in view but exclude those within old boundaries. Only send newly uncovered spawnpoints.
@@ -334,7 +335,7 @@ class Pokemon(BaseModel):
                               (Pokemon.longitude >= oSwLng) &
                               (Pokemon.latitude <= oNeLat) &
                               (Pokemon.longitude <= oNeLng)&
-                              (Pokemon.time_detail == 'saved')))
+                              (Pokemon.time_detail == 1)))
                      .dicts())
         elif swLat and swLng and neLat and neLng:
             query = (query
@@ -342,7 +343,7 @@ class Pokemon(BaseModel):
                             (Pokemon.latitude >= swLat) &
                             (Pokemon.longitude >= swLng) &
                             (Pokemon.longitude <= neLng) &
-                            (Pokemon.time_detail == 'saved')
+                            (Pokemon.time_detail == 1)
                             ))
         
         query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
@@ -754,7 +755,7 @@ def hex_bounds(center, steps):
     return (n, e, s, w)
 
 
-def construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail = "unknown"):
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail = -1):
     pokemons[p['encounter_id']] = {
         'encounter_id': b64encode(str(p['encounter_id'])),
         'spawnpoint_id': p['spawn_point_id'],
@@ -835,12 +836,12 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 skipped += 1
                 continue
 
-            time_detail = "unknown"
+            time_detail = -1
             
             # time_till_hidden_ms was overflowing causing a negative integer.
             # It was also returning a value above 3.6M ms.
             if 0 < p['time_till_hidden_ms'] < 3600000:
-                time_detail = "saved"
+                time_detail = 1
                 d_t = datetime.utcfromtimestamp(
                     (p['last_modified_timestamp_ms'] +
                      p['time_till_hidden_ms']) / 1000.0)
@@ -851,7 +852,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                     d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
                 else:
                     d_t = predicted_time
-                    time_detail = "predicted"
+                    time_detail = 0
                 
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
@@ -1184,7 +1185,7 @@ def clean_db_loop(args):
                 query = (Pokemon
                          .delete()
                          .where((Pokemon.disappear_time <
-                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_deatil == 'saved' )))
+                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_deatil == 1 )))
                 query.execute()
 
             log.info('Regular database cleaning complete')
@@ -1320,5 +1321,5 @@ def database_migrate(db, old_ver):
         )
     if old_ver < 10:
         migrate(
-            migrator.add_column('pokemon', 'time_detail', CharField(default="unknown"))
+            migrator.add_column('pokemon', 'time_detail', IntegerField(default=-1))
         )

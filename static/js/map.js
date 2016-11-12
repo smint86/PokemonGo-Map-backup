@@ -343,7 +343,7 @@ function openMapDirections (lat, lng) { // eslint-disable-line no-unused-vars
   window.open(url, '_blank')
 }
 
-function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, time_detail) {
+function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitude, encounterId, atk, def, sta, move1, move2, timedetail) {
   var disappearDate = new Date(disappearTime)
   var rarityDisplay = rarity ? '(' + rarity + ')' : ''
   var typesDisplay = ''
@@ -362,26 +362,26 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
       </div>
       `
   }
-  
-  var timecontent = ``;
-  
-  if (time_detail == 1){
-	  timecontent = `<div><b>This time is secure. It has been received from the server.</b><br>
+
+  var timecontent = ``
+
+  if (timedetail === 1){
+      timecontent = `<div><b>This time is secure. It has been received from the server.</b><br>
       Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
       <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-    </div>`;
-  }else if(time_detail == 0){
-	  timecontent = `<div><b>This time is only a prediction. It may be wrong.</b><br>
+      </div>`
+  } else if (timedetail === 0){
+      timecontent = `<div><b>This time is only a prediction. It may be wrong.</b><br>
       Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
       <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-    </div>`;
-  }else if(time_detail == -1){
-	  timecontent = `<div><b>Don't trust this time! It has been set manually to 15m when this pokemon has been encountered</b><br>
+      </div>`
+  } else if (timedetail === -1){
+      timecontent = `<div><b>Don't trust this time! It has been set manually to 15m when this pokemon has been encountered</b><br>
       Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
       <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
-    </div>`;
+      </div>`
   }
-  
+
   var contentstring = `
     <div>
       <b>${name}</b>

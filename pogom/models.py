@@ -91,7 +91,7 @@ class Pokemon(BaseModel):
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
     last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
-    time_detail = IntegerField() # -1 when unknown disappear_time, 0 when predicted, 1 when returned by server
+    time_detail = IntegerField()  # -1 when unknown disappear_time, 0 when predicted, 1 when returned by server
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -289,28 +289,27 @@ class Pokemon(BaseModel):
         predicted = -1
 
         query = (Pokemon
-                .select(Pokemon.disappear_time)
-                .where((Pokemon.spawnpoint_id == spawnpoint_id) &
-                       (Pokemon.time_detail == 1)
-                       )
-                .order_by(Pokemon.last_modified.desc())
-                .limit(1)).dicts()
+                    .select(Pokemon.disappear_time)
+                    .where((Pokemon.spawnpoint_id == spawnpoint_id) &
+                           (Pokemon.time_detail == 1)
+                           )
+                    .order_by(Pokemon.last_modified.desc())
+                    .limit(1)).dicts()
 
         temp = list(query)
 
         log.debug("Found %d entrie(s) in db as to predict disappear_time" % (len(temp)))
 
-        if len(temp)>0:
+        if len(temp) > 0:
             disappear_time = temp[0]['disappear_time']
 
-            predicted = now.replace(minute = disappear_time.minute, second = disappear_time.second)
+            predicted = now.replace(minute=disappear_time.minute, second=disappear_time.second)
 
             if now > predicted:
-                predicted = predicted + timedelta(hours = 1)
+                predicted = predicted + timedelta(hours=1)
 
             log.debug("Predicted datetime %s " % (predicted.strftime("%Y-%m-%d %H:%M:%S")))
         return predicted
-
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
@@ -335,8 +334,9 @@ class Pokemon(BaseModel):
                             ~((Pokemon.latitude >= oSwLat) &
                               (Pokemon.longitude >= oSwLng) &
                               (Pokemon.latitude <= oNeLat) &
-                              (Pokemon.longitude <= oNeLng)&
-                              (Pokemon.time_detail == 1)))
+                              (Pokemon.longitude <= oNeLng) &
+                              (Pokemon.time_detail == 1)
+                              ))
                      .dicts())
         elif swLat and swLng and neLat and neLng:
             query = (query
@@ -756,7 +756,7 @@ def hex_bounds(center, steps):
     return (n, e, s, w)
 
 
-def construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail = -1):
+def construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail=-1):
     pokemons[p['encounter_id']] = {
         'encounter_id': b64encode(str(p['encounter_id'])),
         'spawnpoint_id': p['spawn_point_id'],
@@ -838,7 +838,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 continue
 
             time_detail = -1
-            
+
             # time_till_hidden_ms was overflowing causing a negative integer.
             # It was also returning a value above 3.6M ms.
             if 0 < p['time_till_hidden_ms'] < 3600000:
@@ -854,7 +854,6 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 else:
                     d_t = predicted_time
                     time_detail = 0
-                
 
             printPokemon(p['pokemon_data']['pokemon_id'], p['latitude'],
                          p['longitude'], d_t)
@@ -1186,7 +1185,7 @@ def clean_db_loop(args):
                 query = (Pokemon
                          .delete()
                          .where((Pokemon.disappear_time <
-                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_deatil == 1 )))
+                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_deatil == 1)))
                 query.execute()
 
             log.info('Regular database cleaning complete')

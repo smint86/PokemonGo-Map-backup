@@ -346,7 +346,7 @@ class Pokemon(BaseModel):
                             (Pokemon.longitude <= neLng) &
                             (Pokemon.time_detail == 1)
                             ))
-        
+
         query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
 
         queryDict = query.dicts()

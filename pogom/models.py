@@ -289,12 +289,12 @@ class Pokemon(BaseModel):
         predicted = -1
 
         query = (Pokemon
-                    .select(Pokemon.disappear_time)
-                    .where((Pokemon.spawnpoint_id == spawnpoint_id) &
-                           (Pokemon.time_detail == 1)
-                           )
-                    .order_by(Pokemon.last_modified.desc())
-                    .limit(1)).dicts()
+                 .select(Pokemon.disappear_time)
+                 .where((Pokemon.spawnpoint_id == spawnpoint_id) &
+                        (Pokemon.time_detail == 1)
+                       )
+                 .order_by(Pokemon.last_modified.desc())
+                 .limit(1)).dicts()
 
         temp = list(query)
 

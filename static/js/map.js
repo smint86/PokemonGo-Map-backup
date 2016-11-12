@@ -376,7 +376,7 @@ function pokemonLabel (name, rarity, types, disappearTime, id, latitude, longitu
     <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
     </div>`
   } else if (timedetail === -1) {
-    timecontent = `<div><b>Don't trust this time! It has been set manually to 15m when this pokemon has been encountered</b><br>
+    timecontent = `<div><b>Don't trust this time! It has been set manually to<br>15m when this pokemon has been encountered</b><br>
     Disappears at ${pad(disappearDate.getHours())}:${pad(disappearDate.getMinutes())}:${pad(disappearDate.getSeconds())}
     <span class='label-countdown' disappears-at='${disappearTime}'>(00m00s)</span>
     </div>`

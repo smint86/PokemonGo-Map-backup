@@ -291,8 +291,7 @@ class Pokemon(BaseModel):
         query = (Pokemon
                  .select(Pokemon.disappear_time)
                  .where((Pokemon.spawnpoint_id == spawnpoint_id) &
-                        (Pokemon.time_detail == 1)
-                       )
+                        (Pokemon.time_detail == 1))
                  .order_by(Pokemon.last_modified.desc())
                  .limit(1)).dicts()
 
@@ -1185,7 +1184,7 @@ def clean_db_loop(args):
                 query = (Pokemon
                          .delete()
                          .where((Pokemon.disappear_time <
-                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_deatil == 1)))
+                                (datetime.utcnow() - timedelta(hours=args.purge_data))) & ~(Pokemon.time_detail == 1)))
                 query.execute()
 
             log.info('Regular database cleaning complete')

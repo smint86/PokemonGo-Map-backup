@@ -276,7 +276,7 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawn_time(cls, disappear_time):
-        return (disappear_time + 2700) % 3600
+        return (disappear_time + 1800) % 3600
 
     @classmethod
     def clean_timers_data(cls):
@@ -312,16 +312,17 @@ class Pokemon(BaseModel):
 
     @classmethod
     def get_spawnpoints(cls, swLat, swLng, neLat, neLng, timestamp=0, oSwLat=None, oSwLng=None, oNeLat=None, oNeLng=None):
-        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
+        subquery = Pokemon.select(Pokemon.spawnpoint_id.alias('spawn_id'), fn.Max(Pokemon.time_detail).alias('td')).group_by(Pokemon.spawnpoint_id).alias("derived")
+        query = Pokemon.select(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, Pokemon.disappear_time, Pokemon.last_modified, subquery.c.td.alias('time_detail'), ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'), fn.Count(Pokemon.spawnpoint_id).alias('count'))
 
+        query = query.join(subquery, on=(subquery.c.spawn_id == Pokemon.spawnpoint_id))
         if timestamp > 0:
             query = (query
                      .where(((Pokemon.last_modified > datetime.utcfromtimestamp(timestamp / 1000))) &
                             ((Pokemon.latitude >= swLat) &
                              (Pokemon.longitude >= swLng) &
                              (Pokemon.latitude <= neLat) &
-                             (Pokemon.longitude <= neLng) &
-                             (Pokemon.time_detail == 1)))
+                             (Pokemon.longitude <= neLng)))
                      .dicts())
         elif oSwLat and oSwLng and oNeLat and oNeLng:
             # Send spawnpoints in view but exclude those within old boundaries. Only send newly uncovered spawnpoints.
@@ -333,8 +334,7 @@ class Pokemon(BaseModel):
                             ~((Pokemon.latitude >= oSwLat) &
                               (Pokemon.longitude >= oSwLng) &
                               (Pokemon.latitude <= oNeLat) &
-                              (Pokemon.longitude <= oNeLng) &
-                              (Pokemon.time_detail == 1)
+                              (Pokemon.longitude <= oNeLng)
                               ))
                      .dicts())
         elif swLat and swLng and neLat and neLng:
@@ -342,12 +342,10 @@ class Pokemon(BaseModel):
                      .where((Pokemon.latitude <= neLat) &
                             (Pokemon.latitude >= swLat) &
                             (Pokemon.longitude >= swLng) &
-                            (Pokemon.longitude <= neLng) &
-                            (Pokemon.time_detail == 1)
+                            (Pokemon.longitude <= neLng)
                             ))
 
-        query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id, SQL('time'))
-
+        query = query.group_by(Pokemon.latitude, Pokemon.longitude, Pokemon.spawnpoint_id)
         queryDict = query.dicts()
         spawnpoints = {}
 
@@ -358,7 +356,8 @@ class Pokemon(BaseModel):
 
             if key not in spawnpoints:
                 spawnpoints[key] = sp
-            else:
+
+            if (sp['disappear_time'] - sp['last_modified']) > timedelta(minutes=30):
                 spawnpoints[key]['special'] = True
 
             if 'time' not in spawnpoints[key] or count >= spawnpoints[key]['count']:
@@ -382,6 +381,9 @@ class Pokemon(BaseModel):
                          ((Pokemon.disappear_time.minute * 60) + Pokemon.disappear_time.second).alias('time'),
                          Pokemon.spawnpoint_id
                          ))
+        subquery = Pokemon.select(Pokemon.spawnpoint_id.alias('spawn_id'), fn.Max(Pokemon.time_detail).alias('td')).group_by(Pokemon.spawnpoint_id).alias("derived")
+        query = query.join(subquery, on=(subquery.c.spawn_id == Pokemon.spawnpoint_id))
+
         query = (query.where((Pokemon.latitude <= n) &
                              (Pokemon.latitude >= s) &
                              (Pokemon.longitude >= w) &
@@ -850,10 +852,10 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                     (p['last_modified_timestamp_ms'] +
                      p['time_till_hidden_ms']) / 1000.0)
             else:
-                # Set a value of 15 minutes because currently its unknown but larger than 15.
+                # Set a value of 30 minutes because currently its unknown but larger than 30.
                 predicted_time = Pokemon.predict_disappear_time(p['spawn_point_id'])
                 if not isinstance(predicted_time, datetime):
-                    d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 900000) / 1000.0)
+                    d_t = datetime.utcfromtimestamp((p['last_modified_timestamp_ms'] + 1800000) / 1000.0)
                 else:
                     d_t = predicted_time
                     time_detail = 0

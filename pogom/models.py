@@ -877,7 +877,7 @@ def parse_map(args, map_dict, step_location, db_update_queue, wh_update_queue, a
                 encounter_result = req.download_settings()
                 encounter_result = req.get_buddy_walked()
                 encounter_result = req.call()
-                construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail)
+            construct_pokemon_dict(pokemons, p, encounter_result, d_t, time_detail)
             if args.webhooks:
                 wh_update_queue.put(('pokemon', {
                     'encounter_id': b64encode(str(p['encounter_id'])),

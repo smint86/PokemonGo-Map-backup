@@ -91,7 +91,7 @@ class Pokemon(BaseModel):
     move_1 = IntegerField(null=True)
     move_2 = IntegerField(null=True)
     last_modified = DateTimeField(null=True, index=True, default=datetime.utcnow)
-    time_detail = IntegerField()  # -1 when unknown disappear_time, 0 when predicted, 1 when returned by server
+    time_detail = IntegerField(index=True)  # -1 when unknown disappear_time, 0 when predicted, 1 when returned by server
 
     class Meta:
         indexes = ((('latitude', 'longitude'), False),)
@@ -1331,5 +1331,5 @@ def database_migrate(db, old_ver):
         )
     if old_ver < 10:
         migrate(
-            migrator.add_column('pokemon', 'time_detail', IntegerField(default=-1))
+            migrator.add_column('pokemon', 'time_detail', IntegerField(default=-1, index=True))
         )
